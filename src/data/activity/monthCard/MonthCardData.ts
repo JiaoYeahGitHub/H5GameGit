@@ -1,0 +1,4 @@
+class MonthCardData {
+	public constructor() {
+	}
+}

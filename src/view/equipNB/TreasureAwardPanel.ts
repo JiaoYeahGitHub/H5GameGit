@@ -1,0 +1,83 @@
+class TreasureAwardPanel extends BaseWindowPanel {
+	private btn_sure: eui.Button;
+	private award_group: eui.Group;
+	// private title_img: eui.Image;
+	private result_label: eui.Label;
+	private param: AwardNoticeParam;
+	private _showleftTime: number;
+	public priority: PANEL_HIERARCHY_TYPE = PANEL_HIERARCHY_TYPE.II;
+	public constructor(owner: ModuleLayer) {
+		super(owner);
+	}
+	protected onSkinName(): void {
+		this.skinName = skins.TreasureAwardPanelSkin;
+	}
+	protected onInit(): void {
+		this.setTitle('获得奖励');
+		super.onInit();
+		this.onRefresh();
+	}
+	protected onRefresh(): void {
+		this._showleftTime = this.param.autocloseTime;
+		// this.title_img.source = this.param.titleSource
+		this.result_label.text = this.param.desc;
+		this.onUpdateAward();
+		if (this._showleftTime > 0)
+			Tool.addTimer(this.onCloseTimedown, this, 1000);
+		else
+			this.btn_sure.label = this.param.btnlabel;
+	}
+	private onCloseTimedown(): void {
+		this._showleftTime--;
+		if (this._showleftTime < 0) {
+			Tool.removeTimer(this.onCloseTimedown, this, 1000);
+			this.onHide();
+			return;
+		}
+		this.btn_sure.label = this.param.btnlabel + `(${this._showleftTime})`;
+	}
+	protected onRegist(): void {
+		super.onRegist();
+		this.btn_sure.addEventListener(egret.TouchEvent.TOUCH_TAP, this.onHide, this);
+	}
+	protected onRemove(): void {
+		super.onRemove();
+		if (this.param.callFunc && this.param.callObj) {
+			Tool.callback(this.param.callFunc, this.param.callObj, this.param.callParam);
+		}
+		this.param = null;
+		this.btn_sure.removeEventListener(egret.TouchEvent.TOUCH_TAP, this.onHide, this);
+	}
+	public onShowWithParam(param): void {
+		this.param = param;
+		this.onShow();
+	}
+	public onShow(): void {
+		if (this.param)
+			super.onShow();
+	}
+	public onHide(): void {
+		Tool.removeTimer(this.onCloseTimedown, this, 1000);
+		super.onHide();
+	}
+	private onUpdateAward(): void {
+		this.award_group.removeChildren();
+		if (this.param.itemAwards) {
+			for (var i: number = 0; i < this.param.itemAwards.length; i++) {
+				var awarditem: AwardItem = this.param.itemAwards[i];
+				var goodsInstance: GoodsInstance = new GoodsInstance();
+				goodsInstance.x = Math.floor(i % 5) * 100;
+				goodsInstance.y = Math.floor(i / 5) * 130;
+				this.award_group.addChild(goodsInstance);
+				if (awarditem.type == GOODS_TYPE.GEM) {
+					var gemModel: ModelThing = GameCommon.getInstance().getThingModel(GOODS_TYPE.GEM, awarditem.id);
+					goodsInstance.onUpdate(awarditem.type, awarditem.id, 0, awarditem.quality, awarditem.num, gemModel.level);
+				}
+				else {
+					goodsInstance.onUpdate(awarditem.type, awarditem.id, 0, awarditem.quality, awarditem.num);
+				}
+			}
+		}
+	}
+	//The end
+}
